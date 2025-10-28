@@ -31,13 +31,15 @@ uint8_t motorSpeed = 100;
 void setup()
 {
   Serial.begin(9600);
+  Serial.print("READY");
 }
 
 void loop()
 {
   if (Serial.available() > 0) { 
     // Read the incoming byte (as an integer ASCII value)
-    int incomingByte = Serial.read(); 
+    char incomingByte = Serial.read(); 
+    Serial.print(incomingByte);
 
     // Print what was read for confirmation
     // Serial.print("I received: ");
@@ -75,14 +77,14 @@ void loop()
       motor4.run(-motorSpeed);
       delay(2000);
     }
-
-    else{ // stop
-      motor1.stop();
-      motor2.stop();
-      motor3.stop();
-      motor4.stop();
-      delay(100);
-    }
+    
+    // stop
+    motor1.stop();
+    motor2.stop();
+    motor3.stop();
+    motor4.stop();
+    delay(100);
+    
   }
 }
 
