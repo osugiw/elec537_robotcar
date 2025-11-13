@@ -24,9 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'motor_node_py = dc_motor_control.motor_node:main',
-            'serial_motor_node_py = dc_motor_control.serial_motor_node:main',
             'motor_ctl_py = dc_motor_control.motor_ctl:main',
+            'live_control_py = dc_motor_control.live_control:main'
         ],
     },
 )
