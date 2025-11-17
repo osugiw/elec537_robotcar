@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QShortcut, QGridLayout, QHBoxLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QShortcut, QGridLayout, QHBoxLayout, QLabel, QFrame
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import Qt
 import rclpy
@@ -65,6 +65,34 @@ class Control_GUI(QWidget):
         self.setGeometry(100, 100, 500, 500)
         self.ros_node = node
         
+        # --- Status Rectangle ---
+        self.status_rect = QFrame()
+        self.status_rect.setFixedSize(200, 80)
+        self.status_rect.setStyleSheet("""
+            QFrame {
+                background-color: #28a745;   /* green */
+                border-radius: 10px;
+                border: 2px solid #1e7e34;
+            }
+        """)
+
+        # --- Text inside the rectangle ---
+        self.status_label = QLabel("No Obstacle Detected")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        """)
+
+        # Put the label inside the frame using a layout
+        status_layout = QVBoxLayout()
+        status_layout.addWidget(self.status_label, alignment=Qt.AlignCenter)
+        self.status_rect.setLayout(status_layout)
+
+
         layout = QVBoxLayout()    
         layout.setSpacing(5)   # default is ~10–15, so 5 is tighter
 
@@ -135,7 +163,9 @@ class Control_GUI(QWidget):
 
         hbox.addWidget(arrow_widget)
 
-        # Add the horizontal layout into the main vertical layout
+        # Add the children widgets
+        layout.addWidget(self.status_rect, alignment=Qt.AlignCenter)
+        layout.addSpacing(10)  # small spacing below the rectangle
         layout.addLayout(hbox)
         self.setLayout(layout)
 
@@ -163,10 +193,12 @@ class Control_GUI(QWidget):
     def clicked_move_forward(self):
         self.ros_node.publish_command("w")
         print("Publish node to Move forward")
+        # self.object_status(True)          # For testing only
 
     def clicked_move_backward(self):
         self.ros_node.publish_command("s")
         print("Publish node to Move backward")
+        # self.object_status(False)         # For testing only
     
     def clicked_turn_left(self):
         self.ros_node.publish_command("a")
@@ -180,6 +212,30 @@ class Control_GUI(QWidget):
         rclpy.shutdown()
         self.close()
         print("Quitting application")
+
+    def object_status(self, isObstacleDetected = False):
+        if isObstacleDetected == False:
+            self.status_rect.setStyleSheet("""
+                QFrame {
+                    background-color: #28a745;
+                    border-radius: 10px;
+                    border: 2px solid #1e7e34;
+                }
+            """)
+            self.status_label.setText("No Obstacle Detected")
+            self.bt_forward.setEnabled(True)
+            
+        elif isObstacleDetected ==  True:
+            self.status_rect.setStyleSheet("""
+                QFrame {
+                    background-color: #dc3545;
+                    border-radius: 10px;
+                    border: 2px solid #b21f2d;
+                }
+            """)
+            self.status_label.setText("Obstacle Detected")
+            self.bt_forward.setEnabled(False)
+
 
 def main(args=None):
     rclpy.init(args=args)
