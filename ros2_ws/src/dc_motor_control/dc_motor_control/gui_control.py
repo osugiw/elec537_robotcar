@@ -63,7 +63,8 @@ class Control_GUI(QWidget):
         super().__init__()
         self.setWindowTitle("Robotic Control")
         self.setGeometry(100, 100, 300, 200)
-    
+        self.ros_node = node
+
         print("\n=== W,A,S,D Keyboard Control Active ===")
         print("W - Forward")
         print("S - Backward")
@@ -108,19 +109,19 @@ class Control_GUI(QWidget):
         self.shortcut_quit.activated.connect(self.bt_quit.click)
 
     def clicked_move_forward(self):
-        node.publish_command("w")
+        self.ros_node.publish_command("w")
         print("Publish node to Move forward")
 
     def clicked_move_backward(self):
-        node.publish_command("s")
+        self.ros_node.publish_command("s")
         print("Publish node to Move backward")
     
     def clicked_turn_left(self):
-        node.publish_command("a")
+        self.ros_node.publish_command("a")
         print("Publish node to Turn left")
     
     def clicked_turn_right(self):
-        node.publish_command("d")
+        self.ros_node.publish_command("d")
         print("Publish node to Turn right")
 
     def clicked_quit(self):
@@ -130,28 +131,26 @@ class Control_GUI(QWidget):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MotorSerialNode()
-    
-    # Launch GUI
-    while rclpy.ok():
-        try:
-            app = QApplication(sys.argv)
-            window = Control_GUI(node)
-            window.show()
-            sys.exit(app.exec_())
 
-            try:
-                rclpy.spin(node)
-            except KeyboardInterrupt:
-                pass
-            finally:
-                if node.arduino:
-                    node.arduino.close()
-                node.destroy_node()
-                rclpy.shutdown()
-        except Exception as e:
-            print(f"Error in keyboard thread: {e}")
-            break
+    node = MotorSerialNode()
+
+    # Run ROS spinning in background thread
+    ros_thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    ros_thread.start()
+
+    # Start GUI in main thread
+    app = QApplication(sys.argv)
+    window = Control_GUI(node)
+    window.show()
+
+    try:
+        sys.exit(app.exec_())
+    finally:
+        rclpy.shutdown()
+        if node.arduino:
+            node.arduino.close()
+        node.destroy_node()
+
 
 if __name__ == '__main__':
     main()
