@@ -2,7 +2,7 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QShortcut, QGridLayout, QHBoxLayout, QLabel, QFrame
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -12,6 +12,9 @@ import sys
 import tty
 import termios
 import threading
+
+# Obstacle status
+obstacle_status = False
 
 class MotorSerialNode(Node):
     def __init__(self):
@@ -41,6 +44,9 @@ class MotorSerialNode(Node):
         # Publisher for keyboard input
         self.publisher = self.create_publisher(String, 'motor_cmd', 10)
         
+        # Timer for reading from Arduino (10 Hz)
+        self.timer = self.create_timer(0.1, self.read_serial)
+        
     def command_callback(self, msg):
         if self.arduino is None:
             self.get_logger().warn("Arduino not connected.")
@@ -57,6 +63,27 @@ class MotorSerialNode(Node):
         msg.data = command
         self.publisher.publish(msg)
 
+    def read_serial(self):
+        global obstacle_status
+
+        if not self.arduino or self.arduino.in_waiting == 0:
+            return
+
+        try:
+            line = self.arduino.readline().decode(errors='ignore').strip()
+            if not line:
+                return
+
+            if line == "Obj1":
+                obstacle_status = True
+                print("Obstacle Detected")
+            else:
+                obstacle_status = False
+
+        except Exception as e:
+            self.get_logger().error(f"Error parsing serial: {e}")
+
+        
 
 class Control_GUI(QWidget):
     def __init__(self, node):
@@ -91,7 +118,6 @@ class Control_GUI(QWidget):
         status_layout = QVBoxLayout()
         status_layout.addWidget(self.status_label, alignment=Qt.AlignCenter)
         self.status_rect.setLayout(status_layout)
-
 
         layout = QVBoxLayout()    
         layout.setSpacing(5)   # default is ~10–15, so 5 is tighter
@@ -190,15 +216,19 @@ class Control_GUI(QWidget):
         self.shortcut_d.activated.connect(self.bt_turn_right.click)
         self.shortcut_quit.activated.connect(self.bt_quit.click)
 
-    def clicked_move_forward(self):
-        self.ros_node.publish_command("w")
-        print("Publish node to Move forward")
-        # self.object_status(True)          # For testing only
+        # Timer for checking obstcle status
+        self.gui_timer = QTimer()
+        self.gui_timer.timeout.connect(self.obstacle_check_scheduler)
+        self.gui_timer.start(100)  # 100 ms
+
+    def clicked_move_forward(self):     
+        if not obstacle_status: 
+            self.ros_node.publish_command("w")
+            print("Publish node to Move forward")
 
     def clicked_move_backward(self):
         self.ros_node.publish_command("s")
         print("Publish node to Move backward")
-        # self.object_status(False)         # For testing only
     
     def clicked_turn_left(self):
         self.ros_node.publish_command("a")
@@ -212,6 +242,17 @@ class Control_GUI(QWidget):
         rclpy.shutdown()
         self.close()
         print("Quitting application")
+
+    def obstacle_check_scheduler(self):
+        global obstacle_status
+
+        if obstacle_status:
+            object_status = True
+            self.object_status(True)
+        else:
+            obstacle_status = False
+            self.object_status(False)
+
 
     def object_status(self, isObstacleDetected = False):
         if isObstacleDetected == False:
