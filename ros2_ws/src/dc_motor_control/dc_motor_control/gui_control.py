@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QShortcut
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QShortcut, QGridLayout, QHBoxLayout, QLabel
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtCore import Qt
 import rclpy
@@ -62,29 +62,81 @@ class Control_GUI(QWidget):
     def __init__(self, node):
         super().__init__()
         self.setWindowTitle("Robotic Control")
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 500, 500)
         self.ros_node = node
-
-        print("\n=== W,A,S,D Keyboard Control Active ===")
-        print("W - Forward")
-        print("S - Backward")
-        print("A - Left")
-        print("D - Right")
-        print("Q - Quit")
-        print("====================================\n")
-    
+        
         layout = QVBoxLayout()    
-        # Buttons declaration
-        self.bt_forward = QPushButton("W")
-        layout.addWidget(self.bt_forward)
-        self.bt_backward = QPushButton("S")
-        layout.addWidget(self.bt_backward)
-        self.bt_turn_left = QPushButton("A")
-        layout.addWidget(self.bt_turn_left)
-        self.bt_turn_right = QPushButton("D")
-        layout.addWidget(self.bt_turn_right)
-        self.bt_quit = QPushButton("CTRL + C")
-        layout.addWidget(self.bt_quit)
+        layout.setSpacing(5)   # default is ~10–15, so 5 is tighter
+
+        # --- Container for side-by-side layout ---
+        hbox = QHBoxLayout()
+        hbox.setAlignment(Qt.AlignCenter)
+        hbox.setSpacing(20)   # space between instructions and buttons
+
+        # ===== Instruction label =====
+        instructions = QLabel(
+            "======== Keyboard Control ========\n"
+            "W - Forward\n"
+            "S - Backward\n"
+            "A - Left\n"
+            "D - Right\n"
+            "CTRL+C - Quit\n"
+            "===================================="
+        )
+
+        instructions.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        instructions.setStyleSheet("""
+            QLabel {
+                font-family: Consolas, monospace;
+                font-size: 12px;
+            }
+        """)
+
+        hbox.addWidget(instructions)
+
+        # ===== Directional buttons layout =====
+        arrow_layout = QGridLayout()
+        arrow_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.bt_forward = QPushButton("↑")
+        self.bt_forward.setFixedSize(50, 50)
+        arrow_layout.addWidget(self.bt_forward, 0, 1, Qt.AlignCenter)
+
+        self.bt_turn_left = QPushButton("←")
+        self.bt_turn_left.setFixedSize(50, 50)
+        arrow_layout.addWidget(self.bt_turn_left, 1, 0, Qt.AlignCenter)
+
+        self.bt_turn_right = QPushButton("→")
+        self.bt_turn_right.setFixedSize(50, 50)
+        arrow_layout.addWidget(self.bt_turn_right, 1, 2, Qt.AlignCenter)
+
+        self.bt_backward = QPushButton("↓")
+        self.bt_backward.setFixedSize(50, 50)
+        arrow_layout.addWidget(self.bt_backward, 2, 1, Qt.AlignCenter)
+
+        self.bt_quit = QPushButton("Quit")
+        self.bt_quit.setFixedSize(80, 40)
+        self.bt_quit.setStyleSheet("""
+            QPushButton {
+                background-color: #d9534f;
+                color: white;
+                border-radius: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #c9302c; }
+            QPushButton:pressed { background-color: #ac2925; }
+        """)
+        arrow_layout.addWidget(self.bt_quit, 3, 1, Qt.AlignCenter)
+
+        # Wrap arrow pad
+        arrow_widget = QWidget()
+        arrow_widget.setLayout(arrow_layout)
+        arrow_widget.setFixedSize(200, 220)
+
+        hbox.addWidget(arrow_widget)
+
+        # Add the horizontal layout into the main vertical layout
+        layout.addLayout(hbox)
         self.setLayout(layout)
 
         # Connect the button's clicked signal to a slot
