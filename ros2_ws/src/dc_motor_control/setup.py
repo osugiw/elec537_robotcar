@@ -13,9 +13,9 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='user',
-    maintainer_email='user@todo.todo',
-    description='TODO: Package description',
+    maintainer='osugi_w',
+    maintainer_email='osugiartow@gmail.com',
+    description='GUI control for Final project ELEC537',
     license='TODO: License declaration',
     extras_require={
         'test': [
@@ -24,8 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'motor_ctl_py = dc_motor_control.motor_ctl:main',
-            'live_control_py = dc_motor_control.live_control:main'
+            'gui_control_py = dc_motor_control.gui_control:main'
         ],
     },
 )
